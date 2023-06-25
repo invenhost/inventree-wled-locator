@@ -8,6 +8,7 @@ from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.shortcuts import redirect
+from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 from InvenTree.helpers_model import notify_users
 from plugin import InvenTreePlugin
@@ -76,6 +77,13 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         return [
             url(r'off/', self.view_off, name='off'),
         ]
+
+    def get_settings_content(self, request):
+        """Add context to the settings panel."""
+        return f"""
+        <h3>WLED controlls</h3>
+        <p>Turn off all LEDs: <a href="{reverse('plugin:inventree-wled-locator:off')}">turn off</a></p>
+        """
 
     def _set_led(self, target_led: int = None):
         """Turn on a specific LED."""
