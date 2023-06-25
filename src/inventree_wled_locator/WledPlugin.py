@@ -14,8 +14,13 @@ from InvenTree.helpers_model import notify_users
 from plugin import InvenTreePlugin
 from plugin.mixins import LocateMixin, SettingsMixin, UrlsMixin
 from stock.models import StockLocation
+from django.contrib.auth.decorators import user_passes_test
 
 logger = logging.getLogger('inventree')
+
+
+def superuser_check(user):
+    return user.is_superuser
 
 
 class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
@@ -67,6 +72,7 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
 
+    @user_passes_test(superuser_check)
     def view_off(self, request):
         """Turn off all LEDs."""
         self._set_led()
