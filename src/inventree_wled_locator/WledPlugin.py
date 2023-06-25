@@ -54,7 +54,7 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
             location = StockLocation.objects.get(pk=location_pk)
             led_nbr = location.get_metadata('wled_led')
             if led_nbr:
-                self.set_led(13, led_nbr)
+                self.set_led(led_nbr)
             else:
                 # notify superusers that a location has no LED number
                 logger.error(f"Location ID {location_pk} has no WLED LED number!")
