@@ -3,13 +3,14 @@
 import logging
 
 import requests
+from common.notifications import NotificationBody
+from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.utils.translation import ugettext_lazy as _
+from InvenTree.helpers_model import notify_users
 from plugin import InvenTreePlugin
 from plugin.mixins import LocateMixin, SettingsMixin
 from stock.models import StockLocation
-from common.notifications import NotificationBody
-from InvenTree.helpers_model import notify_responsible
 
 logger = logging.getLogger('inventree')
 
@@ -20,6 +21,8 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
     NAME = 'WledPlugin'
     SLUG = 'inventree-wled-locator'
     TITLE = "WLED Locator"
+
+    superusers = list(get_user_model().objects.filter(is_superuser=True).all())
 
     def set_led(self, target_led: int):
         """Turn on a specific LED."""
@@ -55,7 +58,7 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
             else:
                 # notify superusers that a location has no LED number
                 logger.error(f"Location ID {location_pk} has no WLED LED number!")
-                notify_responsible(location, StockLocation, content=self.NO_LED_NOTIFICATION)
+                notify_users(self.superusers, location, StockLocation, content=self.NO_LED_NOTIFICATION)
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
@@ -63,7 +66,7 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
     NO_LED_NOTIFICATION = NotificationBody(
         name=_("No location for {verbose_name}"),
         slug='{app_label}.no_led_{model_name}',
-        message=_("No LED number is assigned for {verbose_name} {name}"),
+        message=_("No LED number is assigned for {verbose_name}"),
     )
 
     SETTINGS = {
@@ -75,9 +78,6 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
             'name': _('Max LEDs'),
             'description': _('Maximum number of LEDs in your WLED device'),
             'default': 1,
-            'validator': [
-                int,
-                MinValueValidator(1),
-            ],
+            'validator': [int, MinValueValidator(1), ],
         },
     }
