@@ -4,18 +4,20 @@ import logging
 
 import requests
 from common.notifications import NotificationBody
+from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
+from django.shortcuts import redirect
 from django.utils.translation import ugettext_lazy as _
 from InvenTree.helpers_model import notify_users
 from plugin import InvenTreePlugin
-from plugin.mixins import LocateMixin, SettingsMixin
+from plugin.mixins import LocateMixin, SettingsMixin, UrlsMixin
 from stock.models import StockLocation
 
 logger = logging.getLogger('inventree')
 
 
-class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
+class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
     """Use WLED to locate InvenTree StockLocations.."""
 
     NAME = 'WledPlugin'
@@ -63,6 +65,17 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
+
+    def view_off(self, request):
+        """Turn off all LEDs."""
+        self._set_led()
+        return redirect(self.settings_url)
+
+    def setup_urls(self):
+        """Return the URLs defined by this plugin."""
+        return [
+            url(r'off/', self.view_off, name='off'),
+        ]
 
     def _set_led(self, target_led: int = None):
         """Turn on a specific LED."""
