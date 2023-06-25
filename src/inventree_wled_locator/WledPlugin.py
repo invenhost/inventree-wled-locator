@@ -8,6 +8,8 @@ from django.utils.translation import ugettext_lazy as _
 from plugin import InvenTreePlugin
 from plugin.mixins import LocateMixin, SettingsMixin
 from stock.models import StockLocation
+from common.notifications import NotificationBody
+from InvenTree.helpers_model import notify_responsible
 
 logger = logging.getLogger('inventree')
 
@@ -47,13 +49,22 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
 
         try:
             location = StockLocation.objects.get(pk=location_pk)
-            logger.info(f"Location exists at '{location.pathstring}'")
-
-            # Tag metadata
-            self.set_led(13, location.get_metadata('wled_led'))
+            led_nbr = location.get_metadata('wled_led')
+            if led_nbr:
+                self.set_led(13, led_nbr)
+            else:
+                # notify superusers that a location has no LED number
+                logger.error(f"Location ID {location_pk} has no WLED LED number!")
+                notify_responsible(location, StockLocation, content=self.NO_LED_NOTIFICATION)
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
+
+    NO_LED_NOTIFICATION = NotificationBody(
+        name=_("No location for {verbose_name}"),
+        slug='{app_label}.no_led_{model_name}',
+        message=_("No LED number is assigned for {verbose_name} {name}"),
+    )
 
     SETTINGS = {
         'ADDRESS': {
