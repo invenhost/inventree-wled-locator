@@ -61,8 +61,8 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
 
         try:
             location = StockLocation.objects.get(pk=location_pk)
-            led_nbr = location.get_metadata('wled_led')
-            if led_nbr:
+            led_nbr = int(location.get_metadata('wled_led'))
+            if led_nbr is not None:
                 self._set_led(led_nbr)
             else:
                 # notify superusers that a location has no LED number
@@ -111,5 +111,5 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
 
         # Turn on target led
-        if target_led:
+        if target_led is not None:
             requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
