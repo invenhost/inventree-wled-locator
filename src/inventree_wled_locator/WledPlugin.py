@@ -80,10 +80,36 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         self._set_led()
         return redirect(self.settings_url)
 
+    def view_unregister(self, request, pk):
+        """Unregister an LED."""
+        if not superuser_check(request.user):
+            raise PermissionError("Only superusers can turn off all LEDs")
+
+        try:
+            item = StockLocation.objects.get(pk=pk)
+            item.set_metadata('wled_led', None)
+        except StockLocation.DoesNotExist:
+            pass
+        return redirect(self.settings_url)
+
+    def view_register(self, request, pk, led):
+        """Register an LED."""
+        if not superuser_check(request.user):
+            raise PermissionError("Only superusers can turn off all LEDs")
+
+        try:
+            item = StockLocation.objects.get(pk=pk)
+            item.set_metadata('wled_led', led)
+        except StockLocation.DoesNotExist:
+            pass
+        return redirect(self.settings_url)
+
     def setup_urls(self):
         """Return the URLs defined by this plugin."""
         return [
             url(r'off/', self.view_off, name='off'),
+            url(r'unregister/(?P<pk>\d+)/', self.view_unregister, name='unregister'),
+            url(r'register/(?P<pk>\d+)/(?P<led>\w+)/', self.view_register, name='register'),
         ]
 
     def get_settings_content(self, request):
@@ -91,7 +117,11 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         stocklocations = StockLocation.objects.filter(metadata__isnull=False).all()
 
         target_locs = [{'name': loc.pathstring, 'led': loc.get_metadata('wled_led'), 'id': loc.id} for loc in stocklocations if loc.get_metadata('wled_led')]
-        stock_strings = ''.join([f'<tr><td>{a["name"]}</td><td>{a["led"]}</td><td>{a["id"]}</td></tr>' for a in target_locs])
+        stock_strings = ''.join([f"""<tr>
+            <td>{a["name"]}</td>
+            <td>{a["led"]}</td>
+            <td><a href="{reverse("plugin:inventree-wled-locator:unregister", kwargs={"pk": a["id"]})}">unregister</a></td>
+        </tr>""" for a in target_locs])
         return f"""
         <h3>WLED controlls</h3>
         <p>Turn off all LEDs: <a href="{reverse('plugin:inventree-wled-locator:off')}">turn off</a></p>
