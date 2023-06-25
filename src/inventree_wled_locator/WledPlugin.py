@@ -22,9 +22,28 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
     SLUG = 'inventree-wled-locator'
     TITLE = "WLED Locator"
 
+    NO_LED_NOTIFICATION = NotificationBody(
+        name=_("No location for {verbose_name}"),
+        slug='{app_label}.no_led_{model_name}',
+        message=_("No LED number is assigned for {verbose_name}"),
+    )
+
+    SETTINGS = {
+        'ADDRESS': {
+            'name': _('IP Address'),
+            'description': _('IP address of your WLED device'),
+        },
+        'MAX_LEDS': {
+            'name': _('Max LEDs'),
+            'description': _('Maximum number of LEDs in your WLED device'),
+            'default': 1,
+            'validator': [int, MinValueValidator(1), ],
+        },
+    }
+
     superusers = list(get_user_model().objects.filter(is_superuser=True).all())
 
-    def set_led(self, target_led: int):
+    def set_led(self, target_led: int = None):
         """Turn on a specific LED."""
         base_url = f'http://{self.get_setting("ADDRESS")}/json/state'
         color_black = '000000'
@@ -34,7 +53,8 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
         requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
 
         # Turn on target led
-        requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
+        if target_led:
+            requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
 
     def locate_stock_location(self, location_pk):
         """Locate a StockLocation.
@@ -56,22 +76,3 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
-
-    NO_LED_NOTIFICATION = NotificationBody(
-        name=_("No location for {verbose_name}"),
-        slug='{app_label}.no_led_{model_name}',
-        message=_("No LED number is assigned for {verbose_name}"),
-    )
-
-    SETTINGS = {
-        'ADDRESS': {
-            'name': _('IP Address'),
-            'description': _('IP address of your WLED device'),
-        },
-        'MAX_LEDS': {
-            'name': _('Max LEDs'),
-            'description': _('Maximum number of LEDs in your WLED device'),
-            'default': 1,
-            'validator': [int, MinValueValidator(1), ],
-        },
-    }
