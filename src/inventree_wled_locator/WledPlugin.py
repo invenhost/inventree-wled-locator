@@ -120,11 +120,11 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         stock_strings = ''.join([f"""<tr>
             <td>{a["name"]}</td>
             <td>{a["led"]}</td>
-            <td><a href="{reverse("plugin:inventree-wled-locator:unregister", kwargs={"pk": a["id"]})}">unregister</a></td>
+            <td><a class="btn btn-primary" href="{reverse("plugin:inventree-wled-locator:unregister", kwargs={"pk": a["id"]})}">unregister</a></td>
         </tr>""" for a in target_locs])
         return f"""
         <h3>WLED controlls</h3>
-        <p>Turn off all LEDs: <a href="{reverse('plugin:inventree-wled-locator:off')}">turn off</a></p>
+        <a class="btn btn-primary" href="{reverse('plugin:inventree-wled-locator:off')}">Turn off</a>
         <table class="table table-striped">
             <thead><tr><th>Location</th><th>LED</th><th>Actions</th></tr></thead>
             <tbody>{stock_strings}</tbody>
