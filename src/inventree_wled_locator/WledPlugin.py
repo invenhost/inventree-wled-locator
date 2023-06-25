@@ -43,19 +43,6 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
 
     superusers = list(get_user_model().objects.filter(is_superuser=True).all())
 
-    def set_led(self, target_led: int = None):
-        """Turn on a specific LED."""
-        base_url = f'http://{self.get_setting("ADDRESS")}/json/state'
-        color_black = '000000'
-        color_marked = 'FF0000'
-
-        # Turn off all segments
-        requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
-
-        # Turn on target led
-        if target_led:
-            requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
-
     def locate_stock_location(self, location_pk):
         """Locate a StockLocation.
 
@@ -68,7 +55,7 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
             location = StockLocation.objects.get(pk=location_pk)
             led_nbr = location.get_metadata('wled_led')
             if led_nbr:
-                self.set_led(led_nbr)
+                self._set_led(led_nbr)
             else:
                 # notify superusers that a location has no LED number
                 logger.error(f"Location ID {location_pk} has no WLED LED number!")
@@ -76,3 +63,16 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
+
+    def _set_led(self, target_led: int = None):
+        """Turn on a specific LED."""
+        base_url = f'http://{self.get_setting("ADDRESS")}/json/state'
+        color_black = '000000'
+        color_marked = 'FF0000'
+
+        # Turn off all segments
+        requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
+
+        # Turn on target led
+        if target_led:
+            requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
