@@ -1,5 +1,6 @@
 """Use WLED to locate InvenTree StockLocations.."""
 
+import json
 import logging
 
 import requests
@@ -7,6 +8,7 @@ from common.notifications import NotificationBody
 from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
@@ -92,10 +94,17 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
             pass
         return redirect(self.settings_url)
 
-    def view_register(self, request, pk, led):
+    def view_register(self, request, pk=None, led=None, context=None):
         """Register an LED."""
         if not superuser_check(request.user):
             raise PermissionError("Only superusers can turn off all LEDs")
+
+        if pk is None and led is None and str(request.body, encoding='utf8') == '':
+            return JsonResponse({'actions': {'POST': ['stocklocation', 'led', ], }})
+        elif request.body is not None:
+            data = json.loads(request.body)
+            pk = data.get('stocklocation')
+            led = data.get('led')
 
         try:
             item = StockLocation.objects.get(pk=pk)
@@ -110,6 +119,7 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
             url(r'off/', self.view_off, name='off'),
             url(r'unregister/(?P<pk>\d+)/', self.view_unregister, name='unregister'),
             url(r'register/(?P<pk>\d+)/(?P<led>\w+)/', self.view_register, name='register'),
+            url(r'register/', self.view_register, name='register-simple'),
         ]
 
     def get_settings_content(self, request):
@@ -125,10 +135,26 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         return f"""
         <h3>WLED controlls</h3>
         <a class="btn btn-primary" href="{reverse('plugin:inventree-wled-locator:off')}">Turn off</a>
+        <button class="btn btn-primary" onclick="led_register()">Register LED</button>
         <table class="table table-striped">
             <thead><tr><th>Location</th><th>LED</th><th>Actions</th></tr></thead>
             <tbody>{stock_strings}</tbody>
         </table>
+        <script>
+        function led_register() {{
+            constructForm('{reverse("plugin:inventree-wled-locator:register-simple")}', {{
+                title: 'Register LED',
+                actions: 'POST',
+                method: 'POST',
+                url: '{reverse("plugin:inventree-wled-locator:register-simple")}',
+                fields: {{
+                    'stocklocation': {{'model': 'stocklocation', label: 'Location', type: 'related field', api_url: '{reverse("api-location-list")}', required: true, }},
+                    'led': {{'label': 'LED', 'type': 'integer', 'min': 0, 'max': {self.get_setting("MAX_LEDS")} }},
+                }},
+            }});
+        }}
+
+        </script>
         """
 
     def _set_led(self, target_led: int = None):
