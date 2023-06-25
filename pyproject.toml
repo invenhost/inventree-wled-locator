@@ -4,12 +4,12 @@ requires = ["setuptools", "wheel", "pyyaml"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "inventree_wled_locator"
+name = "inventree-wled-locator"
 version =  "0.1.0"
-description="Short description of WLED Locator."
+description="Use WLED to locate InvenTree StockLocations."
 readme = "README.md"
 license = {text = "MIT license"}
-keywords = ["inventree", "inventree-plugin", "inventree_wled_locator"]
+keywords = ["inventree", "inventree-plugin", "inventree-wled-locator"]
 authors = [
     {name = "Matthias Mair", email =  "code@mjmair.com"}
 ]
@@ -26,14 +26,14 @@ classifiers=[
         'License :: OSI Approved :: MIT License',
 ]
 requires-python=">=3.9"
-dependencies = ['django', ]
+dependencies = ['django', 'requests']
 
 [project.optional-dependencies]
 dev = ['twine', 'setuptools']
 
 [project.urls]
-"Repository" = "https://github.com/matmair/inventree_wled_locator"
-"Bug Tracker" = "https://github.com/matmair/inventree_wled_locator/issues"
+"Repository" = "https://github.com/matmair/inventree-wled-locator"
+"Bug Tracker" = "https://github.com/matmair/inventree-wled-locator/issues"
 
 [project.entry-points."inventree_plugins"]
 inventree_wled_locator = "inventree_wled_locator:WledPlugin"
