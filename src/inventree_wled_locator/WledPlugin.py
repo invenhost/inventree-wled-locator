@@ -80,9 +80,17 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
 
     def get_settings_content(self, request):
         """Add context to the settings panel."""
+        stocklocations = StockLocation.objects.filter(metadata__isnull=False).all()
+
+        target_locs = [{'name': loc.pathstring, 'led': loc.get_metadata('wled_led'), 'id': loc.id} for loc in stocklocations if loc.get_metadata('wled_led')]
+        stock_strings = ''.join([f'<tr><td>{a["name"]}</td><td>{a["led"]}</td><td>{a["id"]}</td></tr>' for a in target_locs])
         return f"""
         <h3>WLED controlls</h3>
         <p>Turn off all LEDs: <a href="{reverse('plugin:inventree-wled-locator:off')}">turn off</a></p>
+        <table class="table table-striped">
+            <thead><tr><th>Location</th><th>LED</th><th>Actions</th></tr></thead>
+            <tbody>{stock_strings}</tbody>
+        </table>
         """
 
     def _set_led(self, target_led: int = None):
