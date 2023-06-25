@@ -31,16 +31,10 @@ class WledPlugin(LocateMixin, SettingsMixin, InvenTreePlugin):
         color_marked = 'FF0000'
 
         # Turn off all segments
-        json = requests.get(base_url).json()
-        print(json)
-
         requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
 
         # Turn on target led
         requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
-
-        json = requests.get(base_url).json()
-        print(json)
 
     def locate_stock_location(self, location_pk):
         """Locate a StockLocation.
