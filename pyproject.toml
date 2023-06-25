@@ -1,0 +1,42 @@
+
+[build-system]
+requires = ["setuptools", "wheel", "pyyaml"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inventree_wled_locator"
+version =  "0.1.0"
+description="Short description of WLED Locator."
+readme = "README.md"
+license = {text = "MIT license"}
+keywords = ["inventree", "inventree-plugin", "inventree_wled_locator"]
+authors = [
+    {name = "Matthias Mair", email =  "code@mjmair.com"}
+]
+classifiers=[
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Plugins",
+    "Framework :: Django",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Manufacturing",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Scientific/Engineering",
+        'License :: OSI Approved :: MIT License',
+]
+requires-python=">=3.9"
+dependencies = ['django', ]
+
+[project.optional-dependencies]
+dev = ['twine', 'setuptools']
+
+[project.urls]
+"Repository" = "https://github.com/matmair/inventree_wled_locator"
+"Bug Tracker" = "https://github.com/matmair/inventree_wled_locator/issues"
+
+[project.entry-points."inventree_plugins"]
+inventree_wled_locator = "inventree_wled_locator:WledPlugin"
+
+[tool.setuptools.packages.find]
+where = ["src"]

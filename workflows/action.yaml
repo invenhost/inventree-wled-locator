@@ -1,0 +1,13 @@
+name: Plugin action
+on:
+  push:
+    branches: ['main', 'master']
+  pull_request:
+    types: [opened, edited, reopened]
+  release:
+    types: [published]
+
+jobs:
+  plugin-action:
+    uses: matmair/inventree-meta-plugin/.github/workflows/plugin_action.yaml@main
+    secrets: inherit
