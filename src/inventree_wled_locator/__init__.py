@@ -2,4 +2,6 @@
 
 from .WledPlugin import WledPlugin
 
-__all__ = [WledPlugin, ]
+__all__ = [
+    WledPlugin,
+]
