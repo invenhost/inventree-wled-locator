@@ -3,8 +3,6 @@
 import json
 import logging
 
-import requests
-from common.notifications import NotificationBody
 from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
@@ -12,12 +10,16 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
+
+import requests
+from stock.models import StockLocation
+
+from common.notifications import NotificationBody
 from InvenTree.helpers_model import notify_users
 from plugin import InvenTreePlugin
 from plugin.mixins import LocateMixin, SettingsMixin, UrlsMixin
-from stock.models import StockLocation
 
-logger = logging.getLogger('inventree')
+logger = logging.getLogger("inventree")
 
 
 def superuser_check(user):
@@ -28,26 +30,29 @@ def superuser_check(user):
 class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
     """Use WLED to locate InvenTree StockLocations.."""
 
-    NAME = 'WledPlugin'
-    SLUG = 'inventree-wled-locator'
+    NAME = "WledPlugin"
+    SLUG = "inventree-wled-locator"
     TITLE = "WLED Locator"
 
     NO_LED_NOTIFICATION = NotificationBody(
         name=_("No location for {verbose_name}"),
-        slug='{app_label}.no_led_{model_name}',
+        slug="{app_label}.no_led_{model_name}",
         message=_("No LED number is assigned for {verbose_name}"),
     )
 
     SETTINGS = {
-        'ADDRESS': {
-            'name': _('IP Address'),
-            'description': _('IP address of your WLED device'),
+        "ADDRESS": {
+            "name": _("IP Address"),
+            "description": _("IP address of your WLED device"),
         },
-        'MAX_LEDS': {
-            'name': _('Max LEDs'),
-            'description': _('Maximum number of LEDs in your WLED device'),
-            'default': 1,
-            'validator': [int, MinValueValidator(1), ],
+        "MAX_LEDS": {
+            "name": _("Max LEDs"),
+            "description": _("Maximum number of LEDs in your WLED device"),
+            "default": 1,
+            "validator": [
+                int,
+                MinValueValidator(1),
+            ],
         },
     }
 
@@ -63,13 +68,18 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
 
         try:
             location = StockLocation.objects.get(pk=location_pk)
-            led_nbr = int(location.get_metadata('wled_led'))
+            led_nbr = int(location.get_metadata("wled_led"))
             if led_nbr is not None:
                 self._set_led(led_nbr)
             else:
                 # notify superusers that a location has no LED number
                 logger.error(f"Location ID {location_pk} has no WLED LED number!")
-                notify_users(self.superusers, location, StockLocation, content=self.NO_LED_NOTIFICATION)
+                notify_users(
+                    self.superusers,
+                    location,
+                    StockLocation,
+                    content=self.NO_LED_NOTIFICATION,
+                )
 
         except (ValueError, StockLocation.DoesNotExist):  # pragma: no cover
             logger.error(f"Location ID {location_pk} does not exist!")
@@ -89,7 +99,7 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
 
         try:
             item = StockLocation.objects.get(pk=pk)
-            item.set_metadata('wled_led', None)
+            item.set_metadata("wled_led", None)
         except StockLocation.DoesNotExist:
             pass
         return redirect(self.settings_url)
@@ -99,16 +109,25 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         if not superuser_check(request.user):
             raise PermissionError("Only superusers can turn off all LEDs")
 
-        if pk is None and led is None and str(request.body, encoding='utf8') == '':
-            return JsonResponse({'actions': {'POST': ['stocklocation', 'led', ], }})
+        if pk is None and led is None and str(request.body, encoding="utf8") == "":
+            return JsonResponse(
+                {
+                    "actions": {
+                        "POST": [
+                            "stocklocation",
+                            "led",
+                        ],
+                    }
+                }
+            )
         elif request.body is not None:
             data = json.loads(request.body)
-            pk = data.get('stocklocation')
-            led = data.get('led')
+            pk = data.get("stocklocation")
+            led = data.get("led")
 
         try:
             item = StockLocation.objects.get(pk=pk)
-            item.set_metadata('wled_led', led)
+            item.set_metadata("wled_led", led)
         except StockLocation.DoesNotExist:
             pass
         return redirect(self.settings_url)
@@ -116,24 +135,37 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
     def setup_urls(self):
         """Return the URLs defined by this plugin."""
         return [
-            url(r'off/', self.view_off, name='off'),
-            url(r'unregister/(?P<pk>\d+)/', self.view_unregister, name='unregister'),
-            url(r'register/(?P<pk>\d+)/(?P<led>\w+)/', self.view_register, name='register'),
-            url(r'register/', self.view_register, name='register-simple'),
+            url(r"off/", self.view_off, name="off"),
+            url(r"unregister/(?P<pk>\d+)/", self.view_unregister, name="unregister"),
+            url(
+                r"register/(?P<pk>\d+)/(?P<led>\w+)/",
+                self.view_register,
+                name="register",
+            ),
+            url(r"register/", self.view_register, name="register-simple"),
         ]
 
     def get_settings_content(self, request):
         """Add context to the settings panel."""
         stocklocations = StockLocation.objects.filter(metadata__isnull=False).all()
 
-        target_locs = [{'name': loc.pathstring, 'led': loc.get_metadata('wled_led'), 'id': loc.id} for loc in stocklocations if loc.get_metadata('wled_led')]
-        stock_strings = ''.join([f"""<tr>
+        target_locs = [
+            {"name": loc.pathstring, "led": loc.get_metadata("wled_led"), "id": loc.id}
+            for loc in stocklocations
+            if loc.get_metadata("wled_led")
+        ]
+        stock_strings = "".join(
+            [
+                f"""<tr>
             <td>{a["name"]}</td>
             <td>{a["led"]}</td>
             <td><a class="btn btn-primary" href="{reverse("plugin:inventree-wled-locator:unregister", kwargs={"pk": a["id"]})}">unregister</a></td>
-        </tr>""" for a in target_locs])
+        </tr>"""
+                for a in target_locs
+            ]
+        )
         return f"""
-        <h3>WLED controlls</h3>
+        <h3>WLED controls</h3>
         <a class="btn btn-primary" href="{reverse('plugin:inventree-wled-locator:off')}">Turn off</a>
         <button class="btn btn-primary" onclick="led_register()">Register LED</button>
         <table class="table table-striped">
@@ -160,12 +192,20 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
     def _set_led(self, target_led: int = None):
         """Turn on a specific LED."""
         base_url = f'http://{self.get_setting("ADDRESS")}/json/state'
-        color_black = '000000'
-        color_marked = 'FF0000'
+        color_black = "000000"
+        color_marked = "FF0000"
 
         # Turn off all segments
-        requests.post(base_url, json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}})
+        requests.post(
+            base_url,
+            json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}},
+            timeout=3,
+        )
 
         # Turn on target led
         if target_led is not None:
-            requests.post(base_url, json={"seg": {"i": [target_led, color_marked]}})
+            requests.post(
+                base_url,
+                json={"seg": {"i": [target_led, color_marked]}},
+                timeout=3,
+            )
