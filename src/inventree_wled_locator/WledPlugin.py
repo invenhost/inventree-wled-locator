@@ -3,13 +3,12 @@
 import json
 import logging
 
-from django.conf.urls import url
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.http import JsonResponse
 from django.shortcuts import redirect
-from django.urls import reverse
-from django.utils.translation import ugettext_lazy as _
+from django.urls import re_path, reverse
+from django.utils.translation import gettext_lazy as _
 
 import requests
 from stock.models import StockLocation
@@ -135,14 +134,16 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
     def setup_urls(self):
         """Return the URLs defined by this plugin."""
         return [
-            url(r"off/", self.view_off, name="off"),
-            url(r"unregister/(?P<pk>\d+)/", self.view_unregister, name="unregister"),
-            url(
+            re_path(r"off/", self.view_off, name="off"),
+            re_path(
+                r"unregister/(?P<pk>\d+)/", self.view_unregister, name="unregister"
+            ),
+            re_path(
                 r"register/(?P<pk>\d+)/(?P<led>\w+)/",
                 self.view_register,
                 name="register",
             ),
-            url(r"register/", self.view_register, name="register-simple"),
+            re_path(r"register/", self.view_register, name="register-simple"),
         ]
 
     def get_settings_content(self, request):
