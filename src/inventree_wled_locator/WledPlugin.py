@@ -3,6 +3,7 @@
 import json
 import logging
 
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.http import JsonResponse
@@ -126,7 +127,19 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
 
         try:
             item = StockLocation.objects.get(pk=pk)
+            previous_entry = item.get_metadata("wled_led")
             item.set_metadata("wled_led", led)
+            if previous_entry and previous_entry != led:
+                return JsonResponse(
+                    {
+                        "success": f"Location was registered to {previous_entry}, changed to {led}",
+                    }
+                )
+            return JsonResponse(
+                {
+                    "success": "Allocation registered, refresh the page to see it in the list"
+                }
+            )
         except StockLocation.DoesNotExist:
             pass
         return redirect(self.settings_url)
