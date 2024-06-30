@@ -88,7 +88,7 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         if not superuser_check(request.user):
             raise PermissionError("Only superusers can turn off all LEDs")
 
-        self._set_led()
+        self._set_led(request=request)
         return redirect(self.settings_url)
 
     def view_unregister(self, request, pk):
@@ -190,16 +190,27 @@ class WledPlugin(UrlsMixin, LocateMixin, SettingsMixin, InvenTreePlugin):
         </script>
         """
 
-    def _set_led(self, target_led: int = None):
+    def _set_led(self, target_led: int = None, request=None):
         """Turn on a specific LED."""
-        base_url = f'http://{self.get_setting("ADDRESS")}/json/state'
+        address = self.get_setting("ADDRESS")
+        max_leds = self.get_setting("MAX_LEDS")
+
+        # Ensure there are settings
+        if not address:
+            if request:
+                messages.add_message(
+                    request, messages.WARNING, "No IP address set for WLED"
+                )
+            return
+
+        base_url = f"http://{address}/json/state"
         color_black = "000000"
         color_marked = "FF0000"
 
         # Turn off all segments
         requests.post(
             base_url,
-            json={"seg": {"i": [0, self.get_setting("MAX_LEDS"), color_black]}},
+            json={"seg": {"i": [0, max_leds, color_black]}},
             timeout=3,
         )
 
